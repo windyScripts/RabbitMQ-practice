@@ -1,28 +1,27 @@
-var amqp = require('amqplib/callback_api');
+// aync await exchange
 
-amqp.connect('amqp://localhost', function(error0, connection) {
-    if (error0) {
-        throw error0;
-      }
-      connection.createChannel(function(error1, channel) {
-        if(error1){
-            throw error1;
-        }
-        var queue = 'hello';
-        var msg = 'hello world';
+const amqp = require('amqplib'); // removed /callback_api
 
-        channel.assertQueue(queue, {
-            durable: false
-        });
+async function sendMessage(){
+    try{
+        const connection = await amqp.connect('amqp://localhost');
+        const channel = await connection.createChannel();
 
-        channel.sendToQueue(queue, Buffer.from(msg));
-        console.log(" [x] Sent %s", msg);
+        const exchange = 'logs';
+        await channel.assertExchange(exchange, 'fanout', {durable: false});
 
-      });
+        const message = 'Hello RabbitMQ with Fanout!';
+        channel.publish(exchange,'',Buffer.from(message));
 
-      setTimeout(function() {
-        connection.close();
-        process.exit(0)
-      }, 500);
-});
+        console.log(" [x] Sent %s", message);
 
+        setTimeout(() => {
+            channel.close();
+            connection.close();
+        },500)
+    }catch(err){
+        console.log('Error:', err);
+    }
+}
+
+sendMessage();
